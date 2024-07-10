@@ -9,7 +9,6 @@ import * as BUI from "@thatopen/ui";
 import * as OBC from "@thatopen/components";
 import Stats from "stats.js";
 
-// Utilizamos ref para crear una referencia al contenedor
 const container = ref(null);
 const components = new OBC.Components();
 const worlds = components.get(OBC.Worlds);
@@ -21,15 +20,13 @@ const world = worlds.create(
 );
 
 onMounted(() => {
-  // Configuración del mundo
   world.scene = new OBC.SimpleScene(components);
-  world.renderer = new OBC.SimpleRenderer(components, container.value); // Accedemos al valor del ref
+  world.renderer = new OBC.SimpleRenderer(components, container.value);
   world.camera = new OBC.SimpleCamera(components);
 
   components.init();
   world.scene.three.background = null;
 
-  // Crear un cubo
   const material = new THREE.MeshLambertMaterial({ color: "#6528D7" });
   const geometry = new THREE.BoxGeometry();
   const cube = new THREE.Mesh(geometry, material);
@@ -37,14 +34,12 @@ onMounted(() => {
 
   world.scene.setup();
 
-  // Asegurarse de que la cámara tiene un world
   if (world.camera.controls) {
     world.camera.controls.setLookAt(3, 3, 3, 0, 0, 0);
   } else {
     console.error('Camera controls are not initialized');
   }
 
-  // Configuración de Stats
   const stats = new Stats();
   stats.showPanel(2);
   document.body.appendChild(stats.dom);
@@ -53,21 +48,19 @@ onMounted(() => {
   world.renderer.onBeforeUpdate.add(() => stats.begin());
   world.renderer.onAfterUpdate.add(() => stats.end());
 
-  // Inicializar BUI Manager
   BUI.Manager.init();
 
-  // Variables para la manipulación del modelo
   let isDragging = false;
   const rotationSpeed = new THREE.Vector2(0.003, 0.007);
   let startEvent = null;
-  let rotationPoint = new THREE.Vector3(0, 0, 0); // Inicialmente en el origen
+  let rotationPoint = new THREE.Vector3(); 
+  let initialCubeQuaternion = new THREE.Quaternion(); 
+  let initialCubePosition = new THREE.Vector3();
 
-  // Funciones de control
   function onPointerDown(event) {
     isDragging = true;
     startEvent = event;
 
-    // Obtener la posición del punto en el cubo
     const rect = container.value.getBoundingClientRect();
     const mouse = new THREE.Vector2(
       ((event.clientX - rect.left) / rect.width) * 2 - 1,
@@ -78,7 +71,9 @@ onMounted(() => {
 
     const intersects = raycaster.intersectObject(cube);
     if (intersects.length > 0) {
-      rotationPoint.copy(intersects[0].point); // Guardar el punto de intersección
+      rotationPoint.copy(intersects[0].point); 
+      initialCubeQuaternion.copy(cube.quaternion);
+      initialCubePosition.copy(cube.position);
     }
   }
 
@@ -94,39 +89,39 @@ onMounted(() => {
       event.clientY - startEvent.clientY
     );
 
-    const sphericalDirection = directionToSpherical(
-      new THREE.Vector3(),
-      new THREE.Vector3(0, 1, 0)
-    );
-
-    translateModel(delta, sphericalDirection);
-    startEvent = event; // Actualizar el evento de inicio
+    rotateModel(delta);
+    startEvent = event; 
   }
 
-  function directionToSpherical(direction, up) {
-    const spherical = new THREE.Spherical();
-    spherical.setFromVector3(direction);
-    spherical.phi = Math.max(0.02, Math.min(spherical.phi, Math.PI - 0.02)); // Limitar el ángulo phi
-    return spherical;
+  function rotateModel(delta) {
+    const angleX = delta.x * rotationSpeed.x;
+    const angleY = delta.y * rotationSpeed.y;
+
+    const quaternionX = new THREE.Quaternion();
+    const quaternionY = new THREE.Quaternion();
+    quaternionX.setFromAxisAngle(new THREE.Vector3(0, 1, 0), angleX);
+    quaternionY.setFromAxisAngle(new THREE.Vector3(1, 0, 0), angleY);
+
+    const combinedQuaternion = new THREE.Quaternion();
+    combinedQuaternion.multiplyQuaternions(quaternionY, quaternionX);
+    combinedQuaternion.multiply(initialCubeQuaternion);
+
+    cube.quaternion.copy(combinedQuaternion);
+
+    const pivotMatrix = new THREE.Matrix4();
+    pivotMatrix.makeTranslation(-rotationPoint.x, -rotationPoint.y, -rotationPoint.z);
+    pivotMatrix.multiply(new THREE.Matrix4().makeRotationFromQuaternion(combinedQuaternion));
+    pivotMatrix.multiply(new THREE.Matrix4().makeTranslation(rotationPoint.x, rotationPoint.y, rotationPoint.z));
+
+    const newCubePosition = new THREE.Vector3();
+    newCubePosition.copy(initialCubePosition).applyMatrix4(pivotMatrix);
+    cube.position.copy(newCubePosition);
   }
 
-  function translateModel(delta, sphericalDirection) {
-    sphericalDirection.phi += delta.y * rotationSpeed.y;
-    sphericalDirection.theta -= delta.x * rotationSpeed.x;
-
-    const offset = new THREE.Vector3()
-      .setFromSpherical(sphericalDirection)
-      .multiplyScalar(rotationPoint.distanceTo(world.camera.three.position));
-    cube.position.copy(rotationPoint).add(offset);
-    cube.lookAt(rotationPoint);
-  }
-
-  // Eventos del mouse
   container.value.addEventListener('pointerdown', onPointerDown);
   container.value.addEventListener('pointerup', onPointerUp);
   container.value.addEventListener('pointermove', onPointerMove);
 
-  // Cleanup
   onUnmounted(() => {
     container.value.removeEventListener('pointerdown', onPointerDown);
     container.value.removeEventListener('pointerup', onPointerUp);
