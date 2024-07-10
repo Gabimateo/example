@@ -4,37 +4,24 @@
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint"
+    "build": "vue-cli-service build"
   },
   "dependencies": {
-    "vue": "^3.2.13"
+    "@thatopen/components": "^2.0.0",
+    "@thatopen/ui": "2.0.0",
+    "@thatopen/ui-obc": "2.0.0",
+    "@types/earcut": "^2.1.4",
+    "@types/three": "^0.160.0",
+    "stats.js": "^0.17.0",
+    "three": "^0.160.1",
+    "vue": "^3.2.13",
+    "web-ifc": "0.0.53"
   },
   "devDependencies": {
-    "@vue/cli-plugin-eslint": "~5.0.0",
     "@vue/cli-service": "~5.0.0",
-    "eslint": "^7.32.0",
-    "eslint-config-prettier": "^8.3.0",
-    "eslint-plugin-prettier": "^4.0.0",
-    "eslint-plugin-vue": "^8.0.3",
-    "prettier": "^2.4.1",
+    "globals": "^15.3.0",
     "sass": "^1.32.7",
     "sass-loader": "^12.0.0"
-  },
-  "eslintConfig": {
-    "root": true,
-    "env": {
-      "node": true
-    },
-    "extends": [
-      "plugin:vue/vue3-essential",
-      "eslint:recommended",
-      "plugin:prettier/recommended"
-    ],
-    "parserOptions": {
-      "ecmaVersion": 2020
-    },
-    "rules": {}
   },
   "browserslist": [
     "> 1%",
