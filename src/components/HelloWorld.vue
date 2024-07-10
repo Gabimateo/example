@@ -29,8 +29,8 @@ onMounted(() => {
 
   const material = new THREE.MeshLambertMaterial({ color: "#6528D7" });
   const geometry = new THREE.BoxGeometry();
-  const cube = new THREE.Mesh(geometry, material);
-  world.scene.three.add(cube);
+  const model = new THREE.Mesh(geometry, material);
+  world.scene.three.add(model);
 
   world.scene.setup();
 
@@ -47,16 +47,17 @@ onMounted(() => {
 
     const rect = container.value.getBoundingClientRect();
     const mouse = new THREE.Vector2(
-      ((event.clientX - rect.left) / rect.width) * 2 - 1,
-      -((event.clientY - rect.top) / rect.height) * 2 + 1
+      ((event.clientX - rect.left) / rect.width) * 1 - 1,
+      -((event.clientY - rect.top) / rect.height) * 1 + 1
     );
     const raycaster = new THREE.Raycaster();
     raycaster.setFromCamera(mouse, world.camera.three);
 
-    const intersects = raycaster.intersectObject(cube);
+    const intersects = raycaster.intersectObject(model);
+    console.log('[INTERSECTS: ]', intersects);
     if (intersects.length > 0) {
       rotationPoint.copy(intersects[0].point); 
-      initialRotation.copy(cube.rotation); 
+      initialRotation.copy(model.rotation); 
       intersectedPoint.copy(intersects[0].point); 
     }
   }
@@ -68,16 +69,17 @@ onMounted(() => {
   function onPointerMove(event) {
     if (!isDragging) return;
 
-    const delta = new THREE.Vector2(
+    const delta = new THREE.Vector3(
       event.clientX - startEvent.clientX,
-      event.clientY - startEvent.clientY
+      event.clientY - startEvent.clientY,
+      event.clientZ - startEvent.clientZ
     );
 
-    rotateCube(delta);
+    rotateModel(delta);
     startEvent = event; 
   }
 
-  function rotateCube(delta) {
+  function rotateModel(delta) {
     const angleX = delta.x * rotationSpeed.x;
     const angleY = delta.y * rotationSpeed.y;
 
@@ -87,12 +89,12 @@ onMounted(() => {
     quaternionX.setFromAxisAngle(new THREE.Vector3(0, 1, 0), angleX);
     quaternionY.setFromAxisAngle(new THREE.Vector3(1, 0, 0), angleY);
 
-    cube.position.sub(rotationPoint); 
-    cube.position.applyQuaternion(quaternionX);
-    cube.position.applyQuaternion(quaternionY);
-    cube.position.add(rotationPoint);
+    model.position.sub(rotationPoint); 
+    model.position.applyQuaternion(quaternionX);
+    model.position.applyQuaternion(quaternionY);
+    model.position.add(rotationPoint);
 
-    cube.rotation.setFromRotationMatrix(new THREE.Matrix4().makeRotationFromQuaternion(quaternionX.multiply(quaternionY)));
+    model.rotation.setFromRotationMatrix(new THREE.Matrix4().makeRotationFromQuaternion(quaternionX.multiply(quaternionY)));
   }
 
   container.value.addEventListener('pointerdown', onPointerDown);
