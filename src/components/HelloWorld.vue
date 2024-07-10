@@ -34,11 +34,16 @@ onMounted(() => {
 
   world.scene.setup();
 
+  const markerMaterial = new THREE.MeshBasicMaterial({ color: "#FF0000" });
+  const markerGeometry = new THREE.SphereGeometry(0.1, 16, 16);
+  const marker = new THREE.Mesh(markerGeometry, markerMaterial);
+  marker.visible = false;
+  world.scene.three.add(marker);
+
   let isDragging = false;
   const rotationSpeed = new THREE.Vector2(0.003, 0.007);
   let startEvent = null;
   let rotationPoint = new THREE.Vector3(); 
-  let intersectedPoint = new THREE.Vector3(); 
   let initialRotation = new THREE.Euler(); 
 
   function onPointerDown(event) {
@@ -47,32 +52,35 @@ onMounted(() => {
 
     const rect = container.value.getBoundingClientRect();
     const mouse = new THREE.Vector2(
-      ((event.clientX - rect.left) / rect.width) * 1 - 1,
-      -((event.clientY - rect.top) / rect.height) * 1 + 1
+      ((event.clientX - rect.left) / rect.width) * 2 - 1,
+      -((event.clientY - rect.top) / rect.height) * 2 + 1
     );
     const raycaster = new THREE.Raycaster();
     raycaster.setFromCamera(mouse, world.camera.three);
 
     const intersects = raycaster.intersectObject(model);
-    console.log('[INTERSECTS: ]', intersects);
     if (intersects.length > 0) {
       rotationPoint.copy(intersects[0].point); 
       initialRotation.copy(model.rotation); 
-      intersectedPoint.copy(intersects[0].point); 
+      
+      // Mostrar el marcador
+      marker.position.copy(rotationPoint);
+      marker.visible = true;
     }
   }
 
   function onPointerUp() {
     isDragging = false;
+    // Ocultar el marcador
+    marker.visible = false;
   }
 
   function onPointerMove(event) {
     if (!isDragging) return;
 
-    const delta = new THREE.Vector3(
+    const delta = new THREE.Vector2(
       event.clientX - startEvent.clientX,
-      event.clientY - startEvent.clientY,
-      event.clientZ - startEvent.clientZ
+      event.clientY - startEvent.clientY
     );
 
     rotateModel(delta);
